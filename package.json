@@ -1,0 +1,13 @@
+{
+  "name": "spell-checker",
+  "version": "1.0.0",
+  "description": "Realtime AI spelling checker powered by Gemma 1B via Ollama",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0"
+  }
+}
