@@ -1,80 +1,73 @@
-# SpellAI - Realtime AI Spell Checker
 
-A context-aware spelling and grammar checker powered by **Gemma 3 1B** running locally via **Ollama**. Unlike traditional spellcheckers, SpellAI uses an LLM to understand context — catching errors like "too" vs "to", "grate" vs "great", and "mourning" vs "morning" that dictionary-based tools miss.
+---
+
+# SpellAI — Realtime Context-Aware Spell Checker
+
+A **Python-powered spell checker** using **bigram language models, edit distance, and context-aware corrections**. SpellAI goes beyond traditional dictionary-based spellcheckers to understand context and suggest the **most likely correction** in a sentence.
+
+It can catch errors like `"too"` vs `"to"`, `"grate"` vs `"great"`, or `"mourning"` vs `"morning"` that basic spellcheckers miss.
+
+---
 
 ## Features
 
-- **Realtime checking** — auto-checks 800ms after you stop typing, or press `Ctrl+Enter`
-- **Context-aware corrections** — uses LLM understanding, not just dictionary lookup
-- **Side-by-side view** — input on the left, corrected output on the right
-- **Highlighted diffs** — green highlights on corrected words, hover to see the original
-- **Changes list** — all corrections listed with original → fixed
-- **Word / character / sentence counts**
-- **Copy** corrected text or **Apply** to replace input
-- **Paste** from clipboard
-- **Dark / Light theme** toggle
-- **Ollama status indicator**
+* **Realtime suggestions** — check text after typing or on demand (`Ctrl+Enter`)
+* **Context-aware corrections** using **bigram probabilities**
+* **Edit distance scoring** for typo corrections
+* **Side-by-side view** — input vs corrected output
+* **Highlighted diffs** — corrected words highlighted with original word on hover
+* **Corrections list** — shows original → corrected mappings
+* **Word / character / sentence counts**
+* **Copy / Apply** corrected text
+* **Dark / Light theme toggle**
+
+---
 
 ## Prerequisites
 
-- [Ollama](https://ollama.com) installed and running
-- Gemma 3 1B model pulled:
-  ```bash
-  ollama pull gemma3:1b
-  ```
-
-## Run with Docker (one command)
-
-Make sure Ollama is running on your host machine, then:
+* Python ≥ 3.10
+* Required libraries:
 
 ```bash
-docker build -t spellai . && docker run --rm -p 3456:3456 --add-host=host.docker.internal:host-gateway spellai
+pip install -r requirements.txt
 ```
 
-Open **http://localhost:3456** in your browser.
+**requirements.txt** includes:
 
-### Linux note
+* `numpy`
+* `pandas`
+* `nltk`
+* `flask`
+* `difflib`
 
-On Linux, `host.docker.internal` may not resolve by default. The `--add-host=host.docker.internal:host-gateway` flag handles this. If you still have issues, pass the host IP directly:
+---
+
+## Run Locally
 
 ```bash
-docker run --rm -p 3456:3456 -e OLLAMA_HOST=http://172.17.0.1:11434 spellai
+git clone https://github.com/YOUR_USERNAME/spellai.git
+cd spellai
+pip install -r requirements.txt
+python app.py
 ```
 
-### Custom Ollama host
+Open **[http://localhost:5000](http://localhost:5000)** in your browser.
 
-If Ollama runs on a different machine or port:
+---
 
-```bash
-docker run --rm -p 3456:3456 -e OLLAMA_HOST=http://your-ollama-host:11434 spellai
-```
+## How It Works
 
-## Run without Docker
+1. **Input text** is tokenized into words.
+2. Candidate corrections are generated using **edit distance** (Levenshtein distance).
+3. **Bigram language model** computes probabilities of each candidate in context.
+4. The **best candidate** is selected based on **edit distance + bigram probability score**.
+5. Changes are displayed **highlighted in the output** and listed in the corrections panel.
 
-```bash
-npm install
-node server.js
-```
-
-Open **http://localhost:3456**.
-
-## Environment Variables
-
-| Variable | Default | Description |
-|---|---|---|
-| `OLLAMA_HOST` | `http://host.docker.internal:11434` | Ollama API endpoint |
-
-## How it works
-
-1. You type text in the input panel
-2. After 800ms of inactivity, the text is sent to Gemma 3 1B via Ollama
-3. The LLM returns corrected text, preserving your original meaning and style
-4. An LCS-based word diff algorithm identifies exactly what changed
-5. Corrections are highlighted in the output and listed in the changes panel
+---
 
 ## Example
 
-Try pasting this text full of context-dependent errors:
+Input text:
 
 ```
 Yestarday I went too the libary to studdy for my exams. The libarian was very helpfull
@@ -82,17 +75,83 @@ and she recomended a grate book about artifical inteligence. I was exited about 
 oportunity to lern more about this fasinating feild of sciense.
 ```
 
-Context-aware catches that a regular spellchecker would miss:
+SpellAI correction:
 
-| Input | Corrected | Why |
-|---|---|---|
-| too | to | "too" is valid, but context says "went **to** the library" |
-| grate | great | "grate" is a word, but "a **great** book" fits |
-| exited | excited | "exited" means left, but "**excited** about the opportunity" |
+| Input      | Corrected   | Explanation                               |
+| ---------- | ----------- | ----------------------------------------- |
+| Yestarday  | Yesterday   | Correct typo using edit distance          |
+| too        | to          | Bigram context: “went **to** the library” |
+| libary     | library     | Edit distance + bigram probability        |
+| studdy     | study       | Simple typo correction                    |
+| libarian   | librarian   | Context-aware correction                  |
+| grate      | great       | Context-aware using bigram probability    |
+| exited     | excited     | Chooses word fitting sentence context     |
+| fasinating | fascinating | Corrects spelling error                   |
+
+---
+
+## Algorithm
+
+### **1. Bigram Language Model**
+
+* Probability of a word given previous word:
+
+[
+P(w_i | w_{i-1}) = \frac{\text{count}(w_{i-1}, w_i) + 1}{\text{count}(w_{i-1}) + |V|}
+]
+
+* Laplace smoothing is applied for unseen bigrams.
+
+### **2. Edit Distance**
+
+* Levenshtein distance used to generate candidate corrections:
+
+[
+\text{EditDistance}(s_1, s_2) = \text{minimum number of insertions, deletions, substitutions}
+]
+
+* Candidates within 1–2 edits are considered.
+
+### **3. Scoring**
+
+* Each candidate is scored using a **combined metric**:
+
+[
+\text{Score} = \text{BigramProbability} \times \frac{1}{1 + \text{EditDistance}}
+]
+
+* Highest score candidate is chosen.
+
+---
+
+## Project Structure
+
+```text
+SpellAI/
+├── app.py             # Flask backend + spell checker logic
+├── templates/
+│   └── index.html     # Frontend UI
+├── static/
+│   ├── styles.css     # UI styling
+│   └── script.js      # Frontend JS
+├── ngram_model.pkl    # Pre-trained bigram model
+├── requirements.txt
+└── README.md
+```
+
+---
 
 ## Tech Stack
 
-- **Backend**: Node.js + Express (proxy to Ollama)
-- **Frontend**: Vanilla HTML/CSS/JS (no build step)
-- **AI**: Gemma 3 1B via Ollama
-- **Diff**: LCS-based word alignment algorithm
+* **Backend:** Python + Flask
+* **Frontend:** HTML, CSS, JS (no build step)
+* **AI/NLP:** Bigram language model, Edit Distance
+* **Diff:** Python `difflib` for highlighting corrections
+
+---
+
+## License
+
+MIT License — free to use, distribute, and modify.
+
+---
