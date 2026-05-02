@@ -1,157 +1,146 @@
+# SpellAI — Realtime AI Spell &amp; Grammar Checker
 
----
+A clean, fast, **realtime spell &amp; grammar checker** that runs entirely on your machine. SpellAI proxies your text through a local **Gemma 3 1B** model served by [Ollama](https://ollama.com), so nothing ever leaves your device.
 
-# SpellAI — Realtime Context-Aware Spell Checker
-
-A **Python-powered spell checker** using **bigram language models, edit distance, and context-aware corrections**. SpellAI goes beyond traditional dictionary-based spellcheckers to understand context and suggest the **most likely correction** in a sentence.
-
-It can catch errors like `"too"` vs `"to"`, `"grate"` vs `"great"`, or `"mourning"` vs `"morning"` that basic spellcheckers miss.
+It catches the kinds of errors a dictionary-only checker can't — `too` vs `to`, `grate` vs `great`, `mourning` vs `morning` — because the model understands the surrounding context.
 
 ---
 
 ## Features
 
-* **Realtime suggestions** — check text after typing or on demand (`Ctrl+Enter`)
-* **Context-aware corrections** using **bigram probabilities**
-* **Edit distance scoring** for typo corrections
-* **Side-by-side view** — input vs corrected output
-* **Highlighted diffs** — corrected words highlighted with original word on hover
-* **Corrections list** — shows original → corrected mappings
-* **Word / character / sentence counts**
-* **Copy / Apply** corrected text
-* **Dark / Light theme toggle**
+- **Realtime checking** — debounced as you type, or instant with `Ctrl + Enter`
+- **Context-aware corrections** powered by a local LLM (Gemma 3 1B)
+- **Side-by-side view** — original input next to corrected output
+- **Inline highlighted diffs** — hover any correction to see the original word
+- **Changes panel** — flat list of every `original → corrected` swap
+- **Word / character / sentence / reading-time stats**
+- **Keyboard shortcuts** — check, apply, copy, clear, theme-toggle (see in-app help)
+- **Dark / light theme** with system-preference detection and persistence
+- **Draft auto-save** to `localStorage`
+- **Fully local** — text never leaves your machine
+- **Mobile-ready** responsive layout, accessible focus states, reduced-motion support
+
+---
+
+## Stack
+
+- **Backend:** Node.js + Express (single-file server, no build step)
+- **LLM runtime:** [Ollama](https://ollama.com) running `gemma3:1b`
+- **Frontend:** Vanilla HTML / CSS / JS — zero dependencies
+- **Diff:** LCS-based word alignment for accurate correction detection
 
 ---
 
 ## Prerequisites
 
-* Python ≥ 3.10
-* Required libraries:
-
-```bash
-pip install -r requirements.txt
-```
-
-**requirements.txt** includes:
-
-* `numpy`
-* `pandas`
-* `nltk`
-* `flask`
-* `difflib`
+- **Node.js** ≥ 18
+- **Ollama** installed and running locally — [install instructions](https://ollama.com/download)
+- The **Gemma 3 1B** model pulled:
+  ```bash
+  ollama pull gemma3:1b
+  ```
 
 ---
 
 ## Run Locally
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/spellai.git
-cd spellai
-pip install -r requirements.txt
-python app.py
+git clone https://github.com/AleenaTahir1/Spell-corrector.git
+cd Spell-corrector
+npm install
+npm start
 ```
 
-Open **[http://localhost:5000](http://localhost:5000)** in your browser.
+Then open **<http://localhost:3456>** in your browser.
+
+By default the server expects Ollama on `http://host.docker.internal:11434`. If you're running outside Docker, point it at your local Ollama:
+
+```bash
+OLLAMA_HOST=http://localhost:11434 npm start
+```
+
+---
+
+## Run with Docker
+
+```bash
+docker build -t spellai .
+docker run --rm -p 3456:3456 spellai
+```
+
+The container talks to Ollama on the host via `host.docker.internal:11434` (works on Docker Desktop / Mac / Windows out of the box).
+
+---
+
+## Keyboard Shortcuts
+
+| Action               | Shortcut                              |
+| -------------------- | ------------------------------------- |
+| Check now            | `Ctrl` + `Enter`                      |
+| Apply corrections    | `Ctrl` + `Shift` + `Enter`            |
+| Copy corrected text  | `Ctrl` + `Shift` + `C`                |
+| Clear input          | `Ctrl` + `Shift` + `K`                |
+| Toggle theme         | `Ctrl` + `D`                          |
+| Close dialog         | `Esc`                                 |
 
 ---
 
 ## How It Works
 
-1. **Input text** is tokenized into words.
-2. Candidate corrections are generated using **edit distance** (Levenshtein distance).
-3. **Bigram language model** computes probabilities of each candidate in context.
-4. The **best candidate** is selected based on **edit distance + bigram probability score**.
-5. Changes are displayed **highlighted in the output** and listed in the corrections panel.
+1. Frontend debounces input (~700 ms) and `POST`s to `/api/check`.
+2. The Express server wraps your text in a strict prompt and forwards it to Ollama's `/api/generate` endpoint with low temperature for deterministic output.
+3. The model returns the corrected text. Common LLM artifacts (preambles, surrounding quotes) are stripped.
+4. An **LCS-based word diff** aligns original and corrected tokens to extract precise `original → corrected` pairs.
+5. The frontend renders the corrected text with inline highlights and a flat list of changes.
 
 ---
 
-## Example
+## API
 
-Input text:
+### `POST /api/check`
 
-```
-Yestarday I went too the libary to studdy for my exams. The libarian was very helpfull
-and she recomended a grate book about artifical inteligence. I was exited about the
-oportunity to lern more about this fasinating feild of sciense.
+```json
+{ "text": "Yestarday I went too the libary." }
 ```
 
-SpellAI correction:
+**Response:**
 
-| Input      | Corrected   | Explanation                               |
-| ---------- | ----------- | ----------------------------------------- |
-| Yestarday  | Yesterday   | Correct typo using edit distance          |
-| too        | to          | Bigram context: “went **to** the library” |
-| libary     | library     | Edit distance + bigram probability        |
-| studdy     | study       | Simple typo correction                    |
-| libarian   | librarian   | Context-aware correction                  |
-| grate      | great       | Context-aware using bigram probability    |
-| exited     | excited     | Chooses word fitting sentence context     |
-| fasinating | fascinating | Corrects spelling error                   |
-
----
-
-## Algorithm
-
-### **1. Bigram Language Model**
-
-* Probability of a word given previous word:
-
-[
-P(w_i | w_{i-1}) = \frac{\text{count}(w_{i-1}, w_i) + 1}{\text{count}(w_{i-1}) + |V|}
-]
-
-* Laplace smoothing is applied for unseen bigrams.
-
-### **2. Edit Distance**
-
-* Levenshtein distance used to generate candidate corrections:
-
-[
-\text{EditDistance}(s_1, s_2) = \text{minimum number of insertions, deletions, substitutions}
-]
-
-* Candidates within 1–2 edits are considered.
-
-### **3. Scoring**
-
-* Each candidate is scored using a **combined metric**:
-
-[
-\text{Score} = \text{BigramProbability} \times \frac{1}{1 + \text{EditDistance}}
-]
-
-* Highest score candidate is chosen.
+```json
+{
+  "corrected": "Yesterday I went to the library.",
+  "corrections": [
+    { "original": "Yestarday", "corrected": "Yesterday", "origIndex": 0, "corrIndex": 0 },
+    { "original": "too",       "corrected": "to",        "origIndex": 3, "corrIndex": 3 },
+    { "original": "libary.",   "corrected": "library.",  "origIndex": 5, "corrIndex": 5 }
+  ]
+}
+```
 
 ---
 
 ## Project Structure
 
 ```text
-SpellAI/
-├── app.py             # Flask backend + spell checker logic
-├── templates/
-│   └── index.html     # Frontend UI
-├── static/
-│   ├── styles.css     # UI styling
-│   └── script.js      # Frontend JS
-├── ngram_model.pkl    # Pre-trained bigram model
-├── requirements.txt
+Spell-corrector/
+├── server.js          # Express server + Ollama proxy + LCS diff
+├── public/
+│   └── index.html     # Single-file frontend (HTML + CSS + JS)
+├── Dockerfile
+├── package.json
 └── README.md
 ```
 
 ---
 
-## Tech Stack
+## Configuration
 
-* **Backend:** Python + Flask
-* **Frontend:** HTML, CSS, JS (no build step)
-* **AI/NLP:** Bigram language model, Edit Distance
-* **Diff:** Python `difflib` for highlighting corrections
+| Env var       | Default                                | Description                  |
+| ------------- | -------------------------------------- | ---------------------------- |
+| `OLLAMA_HOST` | `http://host.docker.internal:11434`    | Where to reach your Ollama   |
+| `PORT`        | `3456` (hard-coded in `server.js`)     | Port the Express app listens |
 
 ---
 
 ## License
 
-MIT License — free to use, distribute, and modify.
-
----
+MIT — free to use, modify, and distribute.

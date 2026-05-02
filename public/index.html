@@ -3,54 +3,100 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SpellAI - Realtime Spell Checker</title>
+  <meta name="description" content="SpellAI — A realtime, context-aware spell and grammar checker powered by a local Gemma 3 1B model via Ollama." />
+  <meta name="color-scheme" content="dark light" />
+  <title>SpellAI — Realtime Spell Checker</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' x2='1' y1='0' y2='1'%3E%3Cstop offset='0' stop-color='%237c5cfc'/%3E%3Cstop offset='1' stop-color='%23a78bfa'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Ctext x='50%25' y='52%25' text-anchor='middle' dominant-baseline='middle' font-family='Segoe UI,system-ui,sans-serif' font-size='38' font-weight='800' fill='white'%3ES%3C/text%3E%3C/svg%3E" />
   <style>
     :root {
-      --bg: #0f0f13;
-      --bg-card: #1a1a24;
-      --bg-input: #12121a;
-      --border: #2a2a3a;
-      --text: #e4e4ef;
-      --text-dim: #7a7a8e;
-      --accent: #7c5cfc;
-      --accent-glow: rgba(124, 92, 252, 0.15);
+      --bg: #0b0b12;
+      --bg-grad-1: #131322;
+      --bg-grad-2: #0b0b12;
+      --bg-card: #161622;
+      --bg-card-hover: #1b1b2a;
+      --bg-input: #12121c;
+      --border: #262636;
+      --border-strong: #34344a;
+      --text: #ececf5;
+      --text-dim: #8a8aa0;
+      --text-faint: #5a5a72;
+      --accent: #8b6cff;
+      --accent-2: #a78bfa;
+      --accent-glow: rgba(139, 108, 255, 0.18);
+      --accent-strong: rgba(139, 108, 255, 0.5);
       --green: #34d399;
-      --green-bg: rgba(52, 211, 153, 0.1);
+      --green-bg: rgba(52, 211, 153, 0.12);
       --red: #f87171;
-      --red-bg: rgba(248, 113, 113, 0.1);
+      --red-bg: rgba(248, 113, 113, 0.12);
       --yellow: #fbbf24;
-      --radius: 12px;
+      --yellow-bg: rgba(251, 191, 36, 0.12);
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.25);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.3);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,0.45);
+      --radius: 14px;
+      --radius-sm: 8px;
+      --ease: cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     [data-theme="light"] {
-      --bg: #f5f5f7;
+      --bg: #f5f5f9;
+      --bg-grad-1: #ffffff;
+      --bg-grad-2: #eef0f7;
       --bg-card: #ffffff;
-      --bg-input: #fafafa;
-      --border: #e0e0e8;
-      --text: #1a1a2e;
-      --text-dim: #6b6b80;
+      --bg-card-hover: #fafafe;
+      --bg-input: #fafafd;
+      --border: #e3e3ed;
+      --border-strong: #cdcde0;
+      --text: #14142b;
+      --text-dim: #5e5e76;
+      --text-faint: #9a9ab0;
       --accent: #6d4aff;
-      --accent-glow: rgba(109, 74, 255, 0.08);
+      --accent-2: #8b6cff;
+      --accent-glow: rgba(109, 74, 255, 0.1);
+      --accent-strong: rgba(109, 74, 255, 0.35);
       --green: #059669;
-      --green-bg: rgba(5, 150, 105, 0.08);
+      --green-bg: rgba(5, 150, 105, 0.1);
       --red: #dc2626;
-      --red-bg: rgba(220, 38, 38, 0.06);
+      --red-bg: rgba(220, 38, 38, 0.08);
+      --yellow: #d97706;
+      --yellow-bg: rgba(217, 119, 6, 0.1);
+      --shadow-sm: 0 1px 2px rgba(20,20,40,0.06);
+      --shadow-md: 0 4px 16px rgba(20,20,40,0.08);
+      --shadow-lg: 0 12px 40px rgba(20,20,40,0.12);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    *:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
+    html, body { height: 100%; }
 
     body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, "Helvetica Neue", sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
-      transition: background 0.3s, color 0.3s;
+      transition: background 0.3s var(--ease), color 0.3s var(--ease);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 60% 40% at 20% 0%, var(--accent-glow), transparent 60%),
+        radial-gradient(ellipse 50% 30% at 80% 100%, var(--accent-glow), transparent 60%),
+        linear-gradient(180deg, var(--bg-grad-1), var(--bg-grad-2));
+      z-index: -1;
     }
 
     .app {
-      max-width: 960px;
+      max-width: 1080px;
       margin: 0 auto;
-      padding: 32px 20px;
+      padding: 28px 20px 60px;
     }
 
     /* Header */
@@ -58,45 +104,84 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
+      gap: 16px;
+      flex-wrap: wrap;
     }
 
     .logo {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
     }
 
     .logo-icon {
-      width: 40px;
-      height: 40px;
-      background: linear-gradient(135deg, var(--accent), #a78bfa);
-      border-radius: 10px;
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 800;
       color: white;
+      box-shadow: 0 6px 20px var(--accent-strong);
+      letter-spacing: -1px;
     }
 
     .logo h1 {
       font-size: 22px;
       font-weight: 700;
       letter-spacing: -0.5px;
+      line-height: 1.1;
     }
 
-    .logo span {
+    .logo .subtitle {
       font-size: 12px;
       color: var(--text-dim);
       display: block;
-      margin-top: -2px;
+      margin-top: 2px;
+      font-weight: 500;
     }
 
     .header-actions {
       display: flex;
       gap: 8px;
       align-items: center;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      font-size: 12px;
+      color: var(--text-dim);
+      font-weight: 500;
+      transition: all 0.2s var(--ease);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 0 currentColor;
+      animation: pulse-dot 2s infinite;
+      color: var(--green);
+    }
+
+    .status-dot.offline { background: var(--red); color: var(--red); animation: none; }
+    .status-dot.checking { background: var(--yellow); color: var(--yellow); animation: pulse-dot 0.8s infinite; }
+
+    @keyframes pulse-dot {
+      0%   { box-shadow: 0 0 0 0 currentColor; }
+      70%  { box-shadow: 0 0 0 6px transparent; }
+      100% { box-shadow: 0 0 0 0 transparent; }
     }
 
     .btn-icon {
@@ -110,39 +195,19 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
-      transition: all 0.2s;
+      transition: all 0.2s var(--ease);
     }
 
     .btn-icon:hover {
       border-color: var(--accent);
       color: var(--accent);
       background: var(--accent-glow);
+      transform: translateY(-1px);
     }
 
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--green);
-      animation: pulse-dot 2s infinite;
-    }
+    .btn-icon:active { transform: translateY(0); }
 
-    .status-dot.offline { background: var(--red); animation: none; }
-    .status-dot.checking { background: var(--yellow); animation: pulse-dot 0.5s infinite; }
-
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
-    }
-
-    .status-label {
-      font-size: 12px;
-      color: var(--text-dim);
-      margin-left: 6px;
-    }
-
-    /* Main panels */
+    /* Panels */
     .panels {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -150,8 +215,9 @@
       margin-bottom: 16px;
     }
 
-    @media (max-width: 700px) {
+    @media (max-width: 760px) {
       .panels { grid-template-columns: 1fr; }
+      .header { margin-bottom: 20px; }
     }
 
     .panel {
@@ -161,6 +227,14 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+      min-height: 360px;
+    }
+
+    .panel:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-glow), var(--shadow-md);
     }
 
     .panel-header {
@@ -169,91 +243,118 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
-    .panel-header .tag {
+    .panel-title {
       font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 6px;
-      background: var(--accent-glow);
-      color: var(--accent);
-      font-weight: 600;
-      text-transform: none;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-title .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
     }
 
     #input-area {
       width: 100%;
-      min-height: 300px;
-      padding: 16px;
+      flex: 1;
+      min-height: 320px;
+      padding: 18px;
       background: transparent;
       border: none;
       color: var(--text);
       font-size: 15px;
       line-height: 1.7;
-      resize: vertical;
+      resize: none;
       font-family: inherit;
       outline: none;
+      caret-color: var(--accent);
     }
 
     #input-area::placeholder {
-      color: var(--text-dim);
-      opacity: 0.6;
+      color: var(--text-faint);
+      opacity: 1;
     }
 
     .output-area {
-      padding: 16px;
-      min-height: 300px;
+      padding: 18px;
+      min-height: 320px;
+      flex: 1;
       font-size: 15px;
       line-height: 1.7;
       white-space: pre-wrap;
       word-wrap: break-word;
+      overflow-y: auto;
     }
 
     .output-area .correction {
       background: var(--green-bg);
       color: var(--green);
-      padding: 1px 4px;
-      border-radius: 4px;
+      padding: 1px 5px;
+      border-radius: 5px;
       border-bottom: 2px solid var(--green);
-      cursor: pointer;
+      cursor: help;
       position: relative;
+      font-weight: 500;
+      transition: background 0.15s var(--ease);
     }
+
+    .output-area .correction:hover { background: var(--accent-glow); }
 
     .output-area .correction:hover::after {
       content: attr(data-original);
       position: absolute;
-      bottom: 100%;
+      bottom: calc(100% + 6px);
       left: 50%;
       transform: translateX(-50%);
       background: var(--bg-card);
-      border: 1px solid var(--border);
-      padding: 4px 10px;
+      border: 1px solid var(--border-strong);
+      padding: 5px 10px;
       border-radius: 6px;
       font-size: 12px;
       color: var(--red);
       text-decoration: line-through;
       white-space: nowrap;
       z-index: 10;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      margin-bottom: 4px;
+      box-shadow: var(--shadow-md);
+      pointer-events: none;
+      font-weight: 400;
     }
 
     .placeholder-text {
-      color: var(--text-dim);
-      opacity: 0.5;
+      color: var(--text-faint);
       font-style: italic;
+      font-size: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 12px;
+      text-align: center;
+      padding: 24px;
+      min-height: 280px;
+    }
+
+    .placeholder-text svg {
+      opacity: 0.4;
     }
 
     /* Stats bar */
     .stats-bar {
       display: flex;
-      gap: 16px;
-      padding: 12px 16px;
+      gap: 4px;
+      padding: 8px 12px;
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
@@ -261,32 +362,37 @@
       color: var(--text-dim);
       align-items: center;
       flex-wrap: wrap;
+      box-shadow: var(--shadow-sm);
     }
 
     .stat {
       display: flex;
       align-items: center;
       gap: 6px;
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      transition: background 0.15s var(--ease);
     }
 
-    .stat-value {
-      color: var(--text);
-      font-weight: 600;
-    }
+    .stat:hover { background: var(--accent-glow); }
 
-    .stats-bar .spacer { flex: 1; }
+    .stat-label { color: var(--text-dim); font-weight: 500; }
+    .stat-value { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
 
-    /* Corrections list */
+    .stats-bar .spacer { flex: 1; min-width: 8px; }
+
+    /* Corrections panel */
     .corrections-panel {
       margin-top: 16px;
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       overflow: hidden;
+      box-shadow: var(--shadow-sm);
     }
 
     .corrections-header {
-      padding: 12px 16px;
+      padding: 14px 18px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
@@ -294,20 +400,22 @@
     }
 
     .corrections-header h3 {
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 11px;
+      font-weight: 700;
       color: var(--text-dim);
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 1px;
     }
 
     .corrections-count {
-      font-size: 12px;
-      padding: 2px 10px;
-      border-radius: 10px;
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 999px;
       background: var(--red-bg);
       color: var(--red);
-      font-weight: 600;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      transition: all 0.2s var(--ease);
     }
 
     .corrections-count.zero {
@@ -316,18 +424,24 @@
     }
 
     .corrections-list {
-      max-height: 200px;
+      max-height: 240px;
       overflow-y: auto;
     }
 
     .correction-item {
-      padding: 10px 16px;
+      padding: 12px 18px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
       border-bottom: 1px solid var(--border);
       font-size: 14px;
-      transition: background 0.15s;
+      transition: background 0.15s var(--ease);
+      animation: slide-in 0.25s var(--ease);
+    }
+
+    @keyframes slide-in {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
     .correction-item:last-child { border-bottom: none; }
@@ -336,34 +450,47 @@
     .correction-item .orig {
       color: var(--red);
       text-decoration: line-through;
-      min-width: 80px;
+      text-decoration-thickness: 2px;
+      font-weight: 500;
+      font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+      font-size: 13px;
     }
 
     .correction-item .arrow {
-      color: var(--text-dim);
-      font-size: 12px;
+      color: var(--text-faint);
+      display: inline-flex;
+      align-items: center;
     }
 
     .correction-item .fixed {
       color: var(--green);
       font-weight: 600;
+      font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+      font-size: 13px;
     }
 
     .no-corrections {
-      padding: 24px 16px;
+      padding: 32px 16px;
       text-align: center;
       color: var(--text-dim);
       font-size: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
     }
+
+    .no-corrections svg { opacity: 0.5; }
 
     /* Buttons */
     .action-btns {
       display: flex;
-      gap: 8px;
+      gap: 6px;
+      align-items: center;
     }
 
     .btn {
-      padding: 6px 14px;
+      padding: 7px 12px;
       border-radius: 8px;
       border: 1px solid var(--border);
       background: var(--bg-card);
@@ -371,24 +498,37 @@
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.15s var(--ease);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: inherit;
     }
 
     .btn:hover {
       border-color: var(--accent);
       background: var(--accent-glow);
+      color: var(--accent);
     }
 
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn:disabled:hover { background: var(--bg-card); color: var(--text); border-color: var(--border); }
+
     .btn-primary {
-      background: var(--accent);
-      border-color: var(--accent);
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-color: transparent;
       color: white;
+      box-shadow: 0 2px 10px var(--accent-strong);
     }
 
     .btn-primary:hover {
-      opacity: 0.9;
-      background: var(--accent);
+      color: white;
+      filter: brightness(1.1);
+      transform: translateY(-1px);
     }
+
+    .btn svg { width: 14px; height: 14px; }
 
     /* Loading spinner */
     .spinner {
@@ -398,162 +538,371 @@
       border: 2px solid var(--border);
       border-top-color: var(--accent);
       border-radius: 50%;
-      animation: spin 0.6s linear infinite;
+      animation: spin 0.7s linear infinite;
     }
 
     .spinner.active { display: inline-block; }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* Toast */
     .toast {
       position: fixed;
       bottom: 24px;
-      right: 24px;
-      padding: 12px 20px;
+      left: 50%;
+      transform: translate(-50%, 80px);
+      padding: 12px 18px;
       background: var(--bg-card);
-      border: 1px solid var(--border);
+      border: 1px solid var(--border-strong);
       border-radius: 10px;
       font-size: 13px;
       color: var(--text);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-      transform: translateY(80px);
+      box-shadow: var(--shadow-lg);
       opacity: 0;
-      transition: all 0.3s;
+      transition: all 0.3s var(--ease);
       z-index: 100;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: none;
     }
 
     .toast.show {
-      transform: translateY(0);
+      transform: translate(-50%, 0);
       opacity: 1;
     }
 
+    .toast.error { border-color: var(--red); color: var(--red); }
+    .toast.success { border-color: var(--green); color: var(--green); }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      animation: fade-in 0.2s var(--ease);
+    }
+
+    .modal-backdrop.show { display: flex; }
+
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      padding: 24px;
+      max-width: 460px;
+      width: calc(100% - 32px);
+      box-shadow: var(--shadow-lg);
+      animation: pop-in 0.25s var(--ease);
+    }
+
+    @keyframes pop-in {
+      from { opacity: 0; transform: scale(0.96) translateY(8px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal h2 {
+      font-size: 16px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .modal h2 .icon-wrap {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      background: var(--accent-glow);
+      color: var(--accent);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .shortcut-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px dashed var(--border);
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+    .shortcut-row:last-child { border-bottom: none; }
+    .shortcut-row .label { color: var(--text); }
+
+    kbd {
+      font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+      font-size: 11px;
+      padding: 3px 7px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-strong);
+      border-bottom-width: 2px;
+      border-radius: 5px;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .modal-footer {
+      margin-top: 20px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 32px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-faint);
+      padding: 16px 0;
+    }
+
+    .footer a {
+      color: var(--text-dim);
+      text-decoration: none;
+      border-bottom: 1px dashed var(--border-strong);
+      transition: color 0.15s var(--ease);
+    }
+    .footer a:hover { color: var(--accent); }
+
     /* Scrollbar */
-    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+
+    /* Mobile button compaction */
+    @media (max-width: 480px) {
+      .btn .btn-label { display: none; }
+      .btn { padding: 7px 9px; }
+      .header-actions { gap: 6px; }
+      .status-pill .status-text { display: none; }
+      .status-pill { padding: 8px; }
+      .app { padding: 20px 14px 40px; }
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="app">
-    <!-- Header -->
-    <div class="header">
+    <header class="header">
       <div class="logo">
-        <div class="logo-icon">S</div>
+        <div class="logo-icon" aria-hidden="true">S</div>
         <div>
           <h1>SpellAI</h1>
-          <span>Powered by Gemma 3 1B</span>
+          <span class="subtitle">Realtime spell &amp; grammar — local Gemma 3 1B</span>
         </div>
       </div>
       <div class="header-actions">
-        <div style="display:flex;align-items:center;">
-          <div class="status-dot" id="status-dot"></div>
-          <span class="status-label" id="status-label">Ready</span>
+        <div class="status-pill" role="status" aria-live="polite">
+          <span class="status-dot" id="status-dot" aria-hidden="true"></span>
+          <span class="status-text" id="status-label">Ready</span>
         </div>
-        <button class="btn-icon" id="theme-toggle" title="Toggle theme">
-          <svg id="theme-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <button class="btn-icon" id="btn-shortcuts" title="Keyboard shortcuts" aria-label="Show keyboard shortcuts">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"/></svg>
+        </button>
+        <button class="btn-icon" id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">
+          <svg id="theme-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
       </div>
-    </div>
+    </header>
 
-    <!-- Panels -->
-    <div class="panels">
-      <div class="panel">
-        <div class="panel-header">
-          <span>Input</span>
-          <div class="action-btns">
-            <button class="btn" id="btn-clear" title="Clear text">Clear</button>
-            <button class="btn" id="btn-paste" title="Paste from clipboard">Paste</button>
+    <main>
+      <div class="panels">
+        <section class="panel" aria-labelledby="input-title">
+          <div class="panel-header">
+            <span class="panel-title" id="input-title"><span class="dot"></span> Input</span>
+            <div class="action-btns">
+              <button class="btn" id="btn-paste" title="Paste from clipboard">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+                <span class="btn-label">Paste</span>
+              </button>
+              <button class="btn" id="btn-clear" title="Clear text">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+                <span class="btn-label">Clear</span>
+              </button>
+            </div>
+          </div>
+          <textarea id="input-area" placeholder="Start typing or paste text here…&#10;&#10;Spelling and grammar are checked automatically as you pause typing.&#10;Press Ctrl + Enter to check immediately." spellcheck="false" aria-label="Text to check"></textarea>
+        </section>
+
+        <section class="panel" aria-labelledby="output-title">
+          <div class="panel-header">
+            <span class="panel-title" id="output-title"><span class="dot"></span> Corrected</span>
+            <div class="action-btns">
+              <div class="spinner" id="spinner" aria-hidden="true"></div>
+              <button class="btn" id="btn-copy" title="Copy corrected text" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <span class="btn-label">Copy</span>
+              </button>
+              <button class="btn btn-primary" id="btn-apply" title="Replace input with corrected text" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span class="btn-label">Apply</span>
+              </button>
+            </div>
+          </div>
+          <div class="output-area" id="output-area" aria-live="polite">
+            <div class="placeholder-text" id="placeholder">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+              <span>Your corrected text will appear here</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="stats-bar" aria-label="Statistics">
+        <div class="stat"><span class="stat-label">Words</span> <span class="stat-value" id="word-count">0</span></div>
+        <div class="stat"><span class="stat-label">Characters</span> <span class="stat-value" id="char-count">0</span></div>
+        <div class="stat"><span class="stat-label">Sentences</span> <span class="stat-value" id="sentence-count">0</span></div>
+        <div class="stat"><span class="stat-label">Reading</span> <span class="stat-value" id="reading-time">0s</span></div>
+        <div class="spacer"></div>
+        <div class="stat"><span class="stat-label">Corrections</span> <span class="stat-value" id="corrections-count-stat">0</span></div>
+      </div>
+
+      <section class="corrections-panel" aria-labelledby="changes-title">
+        <div class="corrections-header">
+          <h3 id="changes-title">Changes</h3>
+          <span class="corrections-count zero" id="corrections-badge">0</span>
+        </div>
+        <div class="corrections-list" id="corrections-list">
+          <div class="no-corrections" id="no-corrections">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <span>No corrections yet — start typing to see suggestions.</span>
           </div>
         </div>
-        <textarea id="input-area" placeholder="Start typing or paste text here...&#10;&#10;Spelling and grammar will be checked in realtime as you type." spellcheck="false"></textarea>
-      </div>
-      <div class="panel">
-        <div class="panel-header">
-          <span>Corrected</span>
-          <div class="action-btns">
-            <div class="spinner" id="spinner"></div>
-            <button class="btn" id="btn-copy" title="Copy corrected text">Copy</button>
-            <button class="btn btn-primary" id="btn-apply" title="Replace input with corrected text">Apply</button>
-          </div>
-        </div>
-        <div class="output-area" id="output-area">
-          <span class="placeholder-text">Corrected text will appear here...</span>
-        </div>
-      </div>
-    </div>
+      </section>
+    </main>
 
-    <!-- Stats -->
-    <div class="stats-bar">
-      <div class="stat">
-        Words: <span class="stat-value" id="word-count">0</span>
-      </div>
-      <div class="stat">
-        Characters: <span class="stat-value" id="char-count">0</span>
-      </div>
-      <div class="stat">
-        Sentences: <span class="stat-value" id="sentence-count">0</span>
-      </div>
-      <div class="spacer"></div>
-      <div class="stat">
-        Corrections: <span class="stat-value" id="corrections-count-stat">0</span>
-      </div>
-    </div>
+    <footer class="footer">
+      <span>Powered by <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a> &middot; Built with care</span>
+    </footer>
+  </div>
 
-    <!-- Corrections List -->
-    <div class="corrections-panel">
-      <div class="corrections-header">
-        <h3>Changes</h3>
-        <span class="corrections-count zero" id="corrections-badge">0</span>
-      </div>
-      <div class="corrections-list" id="corrections-list">
-        <div class="no-corrections" id="no-corrections">No corrections needed</div>
+  <div class="toast" id="toast" role="alert" aria-live="assertive"></div>
+
+  <div class="modal-backdrop" id="shortcuts-modal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title">
+      <h2 id="shortcuts-title">
+        <span class="icon-wrap"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"/></svg></span>
+        Keyboard Shortcuts
+      </h2>
+      <div class="shortcut-row"><span class="label">Check now</span><span><kbd>Ctrl</kbd> + <kbd>Enter</kbd></span></div>
+      <div class="shortcut-row"><span class="label">Apply corrections</span><span><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Enter</kbd></span></div>
+      <div class="shortcut-row"><span class="label">Copy corrected text</span><span><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd></span></div>
+      <div class="shortcut-row"><span class="label">Clear input</span><span><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>K</kbd></span></div>
+      <div class="shortcut-row"><span class="label">Toggle theme</span><span><kbd>Ctrl</kbd> + <kbd>D</kbd></span></div>
+      <div class="shortcut-row"><span class="label">Close this dialog</span><span><kbd>Esc</kbd></span></div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="btn-close-modal">Got it</button>
       </div>
     </div>
   </div>
 
-  <div class="toast" id="toast"></div>
-
   <script>
-    const inputArea = document.getElementById("input-area");
-    const outputArea = document.getElementById("output-area");
-    const spinner = document.getElementById("spinner");
-    const statusDot = document.getElementById("status-dot");
-    const statusLabel = document.getElementById("status-label");
-    const correctionsList = document.getElementById("corrections-list");
-    const noCorrMsg = document.getElementById("no-corrections");
-    const corrBadge = document.getElementById("corrections-badge");
-    const toast = document.getElementById("toast");
+    "use strict";
+
+    const $ = (id) => document.getElementById(id);
+    const inputArea = $("input-area");
+    const outputArea = $("output-area");
+    const spinner = $("spinner");
+    const statusDot = $("status-dot");
+    const statusLabel = $("status-label");
+    const correctionsList = $("corrections-list");
+    const noCorrMsg = $("no-corrections");
+    const corrBadge = $("corrections-badge");
+    const toast = $("toast");
+    const btnCopy = $("btn-copy");
+    const btnApply = $("btn-apply");
+
+    const STORAGE = { theme: "spellai.theme", text: "spellai.draft" };
 
     let debounceTimer = null;
     let lastText = "";
     let lastCorrected = "";
     let isChecking = false;
+    let pendingText = null;
 
-    // Debounced spell check
+    /* ---------- Theme ---------- */
+    const themeToggle = $("theme-toggle");
+    const themeIcon = $("theme-icon");
+
+    const SUN_SVG = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>';
+    const MOON_SVG = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+
+    function applyTheme(theme) {
+      if (theme === "light") {
+        document.documentElement.setAttribute("data-theme", "light");
+        themeIcon.innerHTML = SUN_SVG;
+      } else {
+        document.documentElement.removeAttribute("data-theme");
+        themeIcon.innerHTML = MOON_SVG;
+      }
+    }
+
+    const savedTheme = localStorage.getItem(STORAGE.theme);
+    const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+    applyTheme(savedTheme || (prefersLight ? "light" : "dark"));
+
+    themeToggle.addEventListener("click", () => {
+      const isLight = document.documentElement.getAttribute("data-theme") === "light";
+      const next = isLight ? "dark" : "light";
+      applyTheme(next);
+      localStorage.setItem(STORAGE.theme, next);
+    });
+
+    /* ---------- Draft persistence ---------- */
+    const savedText = localStorage.getItem(STORAGE.text);
+    if (savedText) {
+      inputArea.value = savedText;
+      updateStats();
+    }
+
+    /* ---------- Input handling ---------- */
     inputArea.addEventListener("input", () => {
       updateStats();
-      const text = inputArea.value.trim();
-      if (text === lastText) return;
-      lastText = text;
+      const text = inputArea.value;
+      localStorage.setItem(STORAGE.text, text);
+
+      const trimmed = text.trim();
+      if (trimmed === lastText) return;
+      lastText = trimmed;
 
       clearTimeout(debounceTimer);
-      if (!text) {
-        outputArea.innerHTML = '<span class="placeholder-text">Corrected text will appear here...</span>';
+      if (!trimmed) {
+        renderPlaceholder();
         updateCorrections([]);
+        lastCorrected = "";
+        updateActionButtons();
         return;
       }
 
-      debounceTimer = setTimeout(() => checkSpelling(text), 800);
+      debounceTimer = setTimeout(() => checkSpelling(trimmed), 700);
     });
 
     async function checkSpelling(text) {
-      if (isChecking) return;
+      if (isChecking) {
+        pendingText = text;
+        return;
+      }
       isChecking = true;
-      setStatus("checking", "Checking...");
+      setStatus("checking", "Checking…");
       spinner.classList.add("active");
 
       try {
@@ -564,112 +913,126 @@
         });
 
         if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || "Server error");
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `Server error (${res.status})`);
         }
 
         const data = await res.json();
-        lastCorrected = data.corrected;
+        lastCorrected = data.corrected || text;
 
-        // Render corrected text with highlights
-        if (data.corrections.length === 0) {
-          outputArea.textContent = data.corrected || text;
+        if (!data.corrections || data.corrections.length === 0) {
+          outputArea.textContent = lastCorrected;
         } else {
           renderHighlighted(text, data.corrected, data.corrections);
         }
 
-        updateCorrections(data.corrections);
+        updateCorrections(data.corrections || []);
+        updateActionButtons();
         setStatus("online", "Ready");
       } catch (err) {
-        setStatus("offline", err.message);
-        showToast("Error: " + err.message);
+        setStatus("offline", err.message || "Server offline");
+        showToast(err.message || "Server offline", "error");
       } finally {
         isChecking = false;
         spinner.classList.remove("active");
+
+        // If new text came in while checking, run again
+        if (pendingText && pendingText !== text) {
+          const next = pendingText;
+          pendingText = null;
+          checkSpelling(next);
+        } else {
+          pendingText = null;
+        }
       }
     }
 
-    function renderHighlighted(original, corrected, corrections) {
-      // Build a set of corrected words/phrases for highlighting
-      const corrWords = corrected.split(/(\s+)/);
+    function renderPlaceholder() {
+      outputArea.innerHTML = `
+        <div class="placeholder-text">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+          <span>Your corrected text will appear here</span>
+        </div>`;
+    }
 
-      // Create lookup: map corrected phrases to their originals
-      const correctedPhrases = new Map();
-      corrections.forEach(c => {
-        correctedPhrases.set(c.corrected, c.original);
+    function renderHighlighted(original, corrected, corrections) {
+      const corrTokens = corrected.split(/(\s+)/);
+      const stripFn = (s) => s.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+      const correctedSet = new Set();
+      corrections.forEach((c) => {
+        c.corrected.split(/\s+/).forEach((w) => {
+          const k = stripFn(w);
+          if (k) correctedSet.add(k);
+        });
       });
 
-      // Simple approach: highlight words in the corrected text that differ
-      const origWordsSet = new Set(original.split(/\s+/));
       let html = "";
-
-      for (const token of corrWords) {
+      for (const token of corrTokens) {
         if (!token.trim()) {
           html += token; // whitespace
           continue;
         }
-
-        // Check if this word was part of a correction
-        const stripped = token.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-        const origStripped = Array.from(origWordsSet).find(w =>
-          w.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() === stripped
-        );
-
-        // Find matching correction
-        const corr = corrections.find(c => {
-          const corrTokens = c.corrected.split(/\s+/);
-          return corrTokens.some(ct => ct === token || ct.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() === stripped);
-        });
-
-        if (corr) {
-          html += `<span class="correction" data-original="${escHtml(corr.original)}">${escHtml(token)}</span>`;
+        const k = stripFn(token);
+        if (k && correctedSet.has(k)) {
+          const corr = corrections.find((c) =>
+            c.corrected.split(/\s+/).some((w) => stripFn(w) === k)
+          );
+          const orig = corr ? corr.original : "";
+          html += `<span class="correction" data-original="${escHtml(orig)}">${escHtml(token)}</span>`;
         } else {
           html += escHtml(token);
         }
       }
-
       outputArea.innerHTML = html;
     }
 
     function escHtml(s) {
-      return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
     }
 
     function updateCorrections(corrections) {
       const count = corrections.length;
       corrBadge.textContent = count;
       corrBadge.className = "corrections-count" + (count === 0 ? " zero" : "");
-      document.getElementById("corrections-count-stat").textContent = count;
+      $("corrections-count-stat").textContent = count;
+
+      correctionsList.querySelectorAll(".correction-item").forEach((el) => el.remove());
 
       if (count === 0) {
-        noCorrMsg.style.display = "block";
-        // Remove old items
-        correctionsList.querySelectorAll(".correction-item").forEach(el => el.remove());
+        noCorrMsg.style.display = "flex";
         return;
       }
 
       noCorrMsg.style.display = "none";
-      let html = "";
-      corrections.forEach(c => {
-        html += `<div class="correction-item">
+      const html = corrections.map((c) => `
+        <div class="correction-item">
           <span class="orig">${escHtml(c.original)}</span>
-          <span class="arrow">--></span>
+          <span class="arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
           <span class="fixed">${escHtml(c.corrected)}</span>
-        </div>`;
-      });
-      // Keep the no-corrections msg but hidden, add items
-      correctionsList.querySelectorAll(".correction-item").forEach(el => el.remove());
+        </div>`).join("");
       correctionsList.insertAdjacentHTML("beforeend", html);
     }
 
     function updateStats() {
       const text = inputArea.value;
-      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+      const trimmed = text.trim();
+      const words = trimmed ? trimmed.split(/\s+/).length : 0;
       const chars = text.length;
-      const sentences = text.trim() ? (text.match(/[.!?]+/g) || []).length || (words > 0 ? 1 : 0) : 0;
-      document.getElementById("word-count").textContent = words;
-      document.getElementById("char-count").textContent = chars;
-      document.getElementById("sentence-count").textContent = sentences;
+      const sentences = trimmed ? ((text.match(/[.!?]+/g) || []).length || (words > 0 ? 1 : 0)) : 0;
+      $("word-count").textContent = words;
+      $("char-count").textContent = chars;
+      $("sentence-count").textContent = sentences;
+
+      // Reading time at ~225 wpm
+      const seconds = Math.round((words / 225) * 60);
+      let readable;
+      if (seconds < 60) readable = `${seconds}s`;
+      else readable = `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+      $("reading-time").textContent = words === 0 ? "0s" : readable;
     }
 
     function setStatus(state, label) {
@@ -677,80 +1040,115 @@
       statusLabel.textContent = label;
     }
 
-    function showToast(msg) {
-      toast.textContent = msg;
-      toast.classList.add("show");
-      setTimeout(() => toast.classList.remove("show"), 3000);
+    function updateActionButtons() {
+      const hasResult = !!lastCorrected;
+      btnCopy.disabled = !hasResult;
+      btnApply.disabled = !hasResult || lastCorrected === inputArea.value.trim();
     }
 
-    // Buttons
-    document.getElementById("btn-clear").addEventListener("click", () => {
+    function showToast(msg, kind = "") {
+      toast.textContent = msg;
+      toast.className = "toast show" + (kind ? ` ${kind}` : "");
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toast.classList.remove("show"), 2400);
+    }
+
+    /* ---------- Buttons ---------- */
+    $("btn-clear").addEventListener("click", () => {
       inputArea.value = "";
       lastText = "";
       lastCorrected = "";
-      outputArea.innerHTML = '<span class="placeholder-text">Corrected text will appear here...</span>';
+      localStorage.removeItem(STORAGE.text);
+      renderPlaceholder();
       updateCorrections([]);
       updateStats();
+      updateActionButtons();
       inputArea.focus();
     });
 
-    document.getElementById("btn-paste").addEventListener("click", async () => {
+    $("btn-paste").addEventListener("click", async () => {
       try {
         const text = await navigator.clipboard.readText();
+        if (!text) { showToast("Clipboard is empty"); return; }
         inputArea.value = text;
         inputArea.dispatchEvent(new Event("input"));
-        showToast("Pasted from clipboard");
+        showToast("Pasted from clipboard", "success");
       } catch {
-        showToast("Clipboard access denied");
+        showToast("Clipboard access denied", "error");
       }
     });
 
-    document.getElementById("btn-copy").addEventListener("click", () => {
+    btnCopy.addEventListener("click", async () => {
       const text = lastCorrected || outputArea.textContent;
-      if (!text || text === "Corrected text will appear here...") return;
-      navigator.clipboard.writeText(text).then(() => showToast("Copied to clipboard"));
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast("Copied to clipboard", "success");
+      } catch {
+        showToast("Could not copy", "error");
+      }
     });
 
-    document.getElementById("btn-apply").addEventListener("click", () => {
+    btnApply.addEventListener("click", () => {
       if (!lastCorrected) return;
       inputArea.value = lastCorrected;
       lastText = lastCorrected;
       outputArea.textContent = lastCorrected;
       updateCorrections([]);
       updateStats();
-      showToast("Applied corrections");
+      updateActionButtons();
+      localStorage.setItem(STORAGE.text, lastCorrected);
+      showToast("Applied corrections", "success");
     });
 
-    // Theme toggle
-    const themeToggle = document.getElementById("theme-toggle");
-    const themeIcon = document.getElementById("theme-icon");
-    let isDark = true;
+    /* ---------- Modal ---------- */
+    const modal = $("shortcuts-modal");
+    function openModal() { modal.classList.add("show"); modal.setAttribute("aria-hidden", "false"); }
+    function closeModal() { modal.classList.remove("show"); modal.setAttribute("aria-hidden", "true"); }
 
-    themeToggle.addEventListener("click", () => {
-      isDark = !isDark;
-      document.documentElement.setAttribute("data-theme", isDark ? "" : "light");
-      if (!isDark) {
-        document.documentElement.removeAttribute("data-theme");
-        document.documentElement.setAttribute("data-theme", "light");
-      } else {
-        document.documentElement.removeAttribute("data-theme");
+    $("btn-shortcuts").addEventListener("click", openModal);
+    $("btn-close-modal").addEventListener("click", closeModal);
+    modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+
+    /* ---------- Keyboard shortcuts ---------- */
+    document.addEventListener("keydown", (e) => {
+      const ctrl = e.ctrlKey || e.metaKey;
+
+      if (e.key === "Escape" && modal.classList.contains("show")) {
+        e.preventDefault();
+        closeModal();
+        return;
       }
-      themeIcon.innerHTML = isDark
-        ? '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'
-        : '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
-    });
-
-    // Keyboard shortcut: Ctrl+Enter to force check
-    inputArea.addEventListener("keydown", (e) => {
-      if (e.ctrlKey && e.key === "Enter") {
+      if (ctrl && e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         clearTimeout(debounceTimer);
         const text = inputArea.value.trim();
         if (text) checkSpelling(text);
+        return;
+      }
+      if (ctrl && e.shiftKey && e.key === "Enter") {
+        e.preventDefault();
+        if (!btnApply.disabled) btnApply.click();
+        return;
+      }
+      if (ctrl && e.shiftKey && (e.key === "C" || e.key === "c")) {
+        e.preventDefault();
+        if (!btnCopy.disabled) btnCopy.click();
+        return;
+      }
+      if (ctrl && e.shiftKey && (e.key === "K" || e.key === "k")) {
+        e.preventDefault();
+        $("btn-clear").click();
+        return;
+      }
+      if (ctrl && (e.key === "d" || e.key === "D")) {
+        e.preventDefault();
+        themeToggle.click();
+        return;
       }
     });
 
-    // Check Ollama connection on load
+    /* ---------- Connection check ---------- */
     (async () => {
       try {
         const r = await fetch("/api/check", {
@@ -758,12 +1156,24 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text: "" }),
         });
-        if (r.ok) setStatus("online", "Ready");
-        else setStatus("offline", "Ollama error");
+        if (r.ok) {
+          setStatus("online", "Ready");
+          // If we have draft text, run a check
+          const trimmed = inputArea.value.trim();
+          if (trimmed) {
+            lastText = trimmed;
+            checkSpelling(trimmed);
+          }
+        } else {
+          setStatus("offline", "Ollama error");
+        }
       } catch {
         setStatus("offline", "Server offline");
       }
     })();
+
+    updateStats();
+    updateActionButtons();
   </script>
 </body>
 </html>
