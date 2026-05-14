@@ -50,8 +50,8 @@ Corrected text:`;
 
     if (!ollamaRes.ok) {
       const errText = await ollamaRes.text();
-      console.error("Ollama error:", errText);
-      return res.status(502).json({ error: "Ollama request failed" });
+      console.error("Backend error:", errText);
+      return res.status(502).json({ error: "Spell-check engine request failed" });
     }
 
     const data = await ollamaRes.json();
@@ -69,7 +69,7 @@ Corrected text:`;
     res.json({ corrected, corrections });
   } catch (err) {
     console.error("Error:", err.message);
-    res.status(500).json({ error: "Failed to connect to Ollama. Is it running?" });
+    res.status(500).json({ error: "Failed to connect to spell-check engine." });
   }
 });
 
