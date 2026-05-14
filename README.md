@@ -85,5 +85,3 @@ Response: { "suggestions": ["spelling", "spilling"] }
 - English only
 
 ---
-
-**Author:** Eman Asghar Kiani | F23607010 | National University of Technology | Semester 6
